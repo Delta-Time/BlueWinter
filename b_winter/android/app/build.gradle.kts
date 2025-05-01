@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.bluewinter.b_winter"
+    namespace = "net.in.mogam.bwinter"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,12 +21,12 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.bluewinter.b_winter"
+        applicationId = "net.in.mogam.bwinter"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
+        versionCode = (((System.currentTimeMillis() / 1000).toInt()))
         versionName = flutter.versionName
     }
 
@@ -41,4 +41,20 @@ android {
 
 flutter {
     source = "../.."
+}
+
+// バージョンコードを動的に生成してpubspec.yamlを更新するタスク
+tasks.register("updateVersionCode") {
+    doLast {
+        val versionCode = (System.currentTimeMillis() / 1000).toInt()
+        val pubspecFile = file("../../pubspec.yaml")
+        val content = pubspecFile.readText().replace("__VERSION_CODE__", versionCode.toString())
+        pubspecFile.writeText(content)
+        println("Updated version code to $versionCode")
+    }
+}
+
+// ビルド前にバージョンコードを更新
+tasks.named("preBuild") {
+    dependsOn("updateVersionCode")
 }
