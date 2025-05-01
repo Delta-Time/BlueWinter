@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/settings_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -9,6 +10,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final settingsProvider = Provider.of<SettingsProvider>(context);
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -29,6 +31,16 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           const Divider(),
+          
+          // TL画面からの投稿範囲設定
+          ListTile(
+            title: const Text('TL画面からの投稿範囲'),
+            subtitle: Text(_getVisibilityText(settingsProvider.defaultVisibility)),
+            leading: const Icon(Icons.visibility),
+            onTap: () => _showVisibilityDialog(context, settingsProvider),
+          ),
+          
+          const Divider(),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('ログアウト'),
@@ -37,6 +49,64 @@ class SettingsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _showVisibilityDialog(BuildContext context, SettingsProvider settingsProvider) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('投稿範囲の設定'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildVisibilityOption(context, settingsProvider, 'public', '公開'),
+              _buildVisibilityOption(context, settingsProvider, 'unlisted', '未収載'),
+              _buildVisibilityOption(context, settingsProvider, 'private', 'フォロワー限定'),
+              _buildVisibilityOption(context, settingsProvider, 'direct', 'ダイレクト'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('キャンセル'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildVisibilityOption(BuildContext context, SettingsProvider settingsProvider, 
+      String value, String label) {
+    return RadioListTile<String>(
+      title: Text(label),
+      value: value,
+      groupValue: settingsProvider.defaultVisibility,
+      onChanged: (String? newValue) {
+        if (newValue != null) {
+          settingsProvider.setDefaultVisibility(newValue);
+          Navigator.pop(context);
+        }
+      },
+    );
+  }
+
+  String _getVisibilityText(String visibility) {
+    switch (visibility) {
+      case 'public':
+        return '公開';
+      case 'unlisted':
+        return '未収載';
+      case 'private':
+        return 'フォロワー限定';
+      case 'direct':
+        return 'ダイレクト';
+      default:
+        return visibility;
+    }
   }
 
   void _showLogoutDialog(BuildContext context) {

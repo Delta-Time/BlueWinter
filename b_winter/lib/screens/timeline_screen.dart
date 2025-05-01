@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/toot_model.dart';
 import '../providers/timeline_provider.dart';
 import '../providers/mastodon_provider.dart';
+import '../providers/settings_provider.dart';
 import '../widgets/toot_card.dart';
 import 'toot_detail_screen.dart';
 import 'compose_screen.dart';
@@ -177,9 +178,12 @@ class _TimelineScreenState extends State<TimelineScreen> {
     });
 
     try {
+      // 設定から投稿範囲を取得
+      final defaultVisibility = Provider.of<SettingsProvider>(context, listen: false).defaultVisibility;
+      
       await Provider.of<MastodonProvider>(context, listen: false).postStatus(
         status: text,
-        visibility: 'public',
+        visibility: defaultVisibility,
       );
       
       _textController.clear();

@@ -4,6 +4,7 @@ import 'providers/auth_provider.dart';
 import 'providers/mastodon_provider.dart';
 import 'providers/timeline_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/settings_provider.dart';
 import 'services/storage_service.dart';
 import 'services/mastodon_service.dart';
 import 'screens/splash_screen.dart';
@@ -55,6 +56,11 @@ class MyApp extends StatelessWidget {
         // ThemeProviderの提供
         ChangeNotifierProvider(
           create: (_) => ThemeProvider(),
+        ),
+        
+        // SettingsProviderの提供
+        ChangeNotifierProvider(
+          create: (_) => SettingsProvider(),
         ),
       ],
       child: Consumer<ThemeProvider>(
