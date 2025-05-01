@@ -27,7 +27,7 @@ android {
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = (((System.currentTimeMillis() / 1000).toInt()))
-        versionName = flutter.versionName
+        versionName = "1.0.0"
     }
 
     buildTypes {
@@ -43,18 +43,15 @@ flutter {
     source = "../.."
 }
 
-// バージョンコードを動的に生成してpubspec.yamlを更新するタスク
-tasks.register("updateVersionCode") {
+// バージョンコードを表示するだけのタスク
+tasks.register("showVersionCode") {
     doLast {
         val versionCode = (System.currentTimeMillis() / 1000).toInt()
-        val pubspecFile = file("../../pubspec.yaml")
-        val content = pubspecFile.readText().replace("__VERSION_CODE__", versionCode.toString())
-        pubspecFile.writeText(content)
-        println("Updated version code to $versionCode")
+        println("Current version code (timestamp): $versionCode")
     }
 }
 
-// ビルド前にバージョンコードを更新
+// ビルド前にバージョンコードを表示
 tasks.named("preBuild") {
-    dependsOn("updateVersionCode")
+    dependsOn("showVersionCode")
 }
