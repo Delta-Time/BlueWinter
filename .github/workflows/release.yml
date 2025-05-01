@@ -40,4 +40,4 @@ jobs:
           files: b_winter/build/app/outputs/flutter-apk/app-release.apk
           name: Release ${{ env.VERSION }}
           tag_name: ${{ github.ref }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
