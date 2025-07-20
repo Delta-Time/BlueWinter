@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/mastodon_provider.dart';
+import '../providers/settings_provider.dart';
 
 class ComposeScreen extends StatefulWidget {
   final String? replyToId;
@@ -23,6 +24,17 @@ class _ComposeScreenState extends State<ComposeScreen> {
   void initState() {
     super.initState();
     _focusNode.requestFocus();
+    // 設定プロバイダーからデフォルトの公開範囲を読み込む
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+        if (settingsProvider.defaultVisibility != _visibility) {
+          setState(() {
+            _visibility = settingsProvider.defaultVisibility;
+          });
+        }
+      }
+    });
   }
 
   @override
@@ -73,6 +85,18 @@ class _ComposeScreenState extends State<ComposeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 設定プロバイダーからデフォルトの公開範囲を監視
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    
+    // 設定が変更された時に公開範囲を更新
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && settingsProvider.defaultVisibility != _visibility) {
+        setState(() {
+          _visibility = settingsProvider.defaultVisibility;
+        });
+      }
+    });
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('新規投稿'),
