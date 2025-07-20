@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/toot_model.dart';
@@ -57,26 +58,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   void _setupStreaming() {
-    final mastodonProvider = Provider.of<MastodonProvider>(context, listen: false);
-    _streamSubscription = mastodonProvider.streamTimeline(widget.timelineType).listen(
-      (data) {
-        if (mounted && data['event'] == 'update') {
-          // 新しい投稿を処理
-          try {
-            final toot = Toot.fromJson(data['payload']);
-            setState(() {
-              // 新しい投稿をリストの先頭に追加
-              // 実際の実装では、タイムラインの状態管理が必要
-            });
-          } catch (e) {
-            print('投稿データの解析エラー: $e');
-          }
-        }
-      },
-      onError: (error) {
-        print('タイムラインストリーミングエラー: $error');
-      },
-    );
+    // TimelineProviderで効率的なストリーミングが既に実装されているため、
+    // ここでの追加のストリーミング処理は不要
+    // TimelineProvider.fetchTimelineEfficient()でストリーミングが開始される
   }
 
   Future<void> _loadTimeline() async {
@@ -87,8 +71,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
     });
     
     try {
+      // 効率的なタイムライン取得を使用
       await Provider.of<TimelineProvider>(context, listen: false)
-          .fetchTimeline(widget.timelineType);
+          .fetchTimelineEfficient(widget.timelineType);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -112,8 +97,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
     });
     
     try {
+      // 効率的なリフレッシュを使用
       await Provider.of<TimelineProvider>(context, listen: false)
-          .refreshTimeline(widget.timelineType);
+          .refreshTimelineEfficient(widget.timelineType);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -215,6 +201,10 @@ class _TimelineScreenState extends State<TimelineScreen> {
     return Consumer<TimelineProvider>(
       builder: (context, timelineProvider, child) {
         final toots = timelineProvider.getTimelineToots(widget.timelineType);
+        final streamingInfo = timelineProvider.getStreamingInfo(widget.timelineType);
+        
+        // デバッグ情報をコンソールに出力
+        print('タイムライン状態 (${widget.timelineType}): $streamingInfo');
         
         return Scaffold(
           body: Column(

@@ -205,8 +205,23 @@ class MastodonService {
       final notificationStream = _streamingManager.getStream('user');
       final subscription = notificationStream.listen(
         (data) {
-          if (data['event'] == 'notification') {
-            controller.add([data['payload']]);
+          try {
+            // データの型をチェックして適切に解析
+            Map<String, dynamic> parsedData;
+            if (data is String) {
+              parsedData = json.decode(data);
+            } else if (data is Map<String, dynamic>) {
+              parsedData = data;
+            } else {
+              print('未対応のデータ型: ${data.runtimeType}');
+              return;
+            }
+            
+            if (parsedData['event'] == 'notification' && parsedData['payload'] != null) {
+              controller.add([parsedData['payload']]);
+            }
+          } catch (e) {
+            print('通知ストリーミングデータ解析エラー: $e');
           }
         },
         onError: (error) {
@@ -240,8 +255,23 @@ class MastodonService {
       final notificationStream = _streamingManager.getStream('user');
       final subscription = notificationStream.listen(
         (data) {
-          if (data['event'] == 'notification') {
-            controller.add([data['payload']]);
+          try {
+            // データの型をチェックして適切に解析
+            Map<String, dynamic> parsedData;
+            if (data is String) {
+              parsedData = json.decode(data);
+            } else if (data is Map<String, dynamic>) {
+              parsedData = data;
+            } else {
+              print('未対応のデータ型: ${data.runtimeType}');
+              return;
+            }
+            
+            if (parsedData['event'] == 'notification' && parsedData['payload'] != null) {
+              controller.add([parsedData['payload']]);
+            }
+          } catch (e) {
+            print('通知ストリーミングデータ解析エラー: $e');
           }
         },
         onError: (error) {
@@ -295,6 +325,173 @@ class MastodonService {
       _streamingManager.reconnectStream('user');
       
       return notifications;
+    }
+  }
+
+  // タイムラインの効率的なストリーミング（初回API取得→WebSocket差分更新）
+  Stream<List<Toot>> streamTimelineEfficient(String timeline) {
+    final controller = StreamController<List<Toot>>.broadcast();
+    
+    // 初回：APIでタイムラインを取得
+    fetchTimeline(timeline).then((initialToots) {
+      controller.add(initialToots);
+      
+      // StreamingManagerで差分更新
+      final timelineStream = _streamingManager.getStream(_getStreamType(timeline));
+      final subscription = timelineStream.listen(
+        (data) {
+          try {
+            // データの型をチェックして適切に解析
+            Map<String, dynamic> parsedData;
+            if (data is String) {
+              parsedData = json.decode(data);
+            } else if (data is Map<String, dynamic>) {
+              parsedData = data;
+            } else {
+              return;
+            }
+            
+            if (parsedData['event'] == 'update' && parsedData['payload'] != null) {
+              // payloadがString型の場合はJSON解析する
+              Map<String, dynamic> payloadData;
+              if (parsedData['payload'] is String) {
+                payloadData = json.decode(parsedData['payload']);
+              } else if (parsedData['payload'] is Map<String, dynamic>) {
+                payloadData = parsedData['payload'];
+              } else {
+                return;
+              }
+              
+              final toot = Toot.fromJson(payloadData);
+              controller.add([toot]);
+            }
+          } catch (e) {
+            print('タイムラインストリーミングデータ解析エラー ($timeline): $e');
+          }
+        },
+        onError: (error) {
+          print('タイムラインストリーミングエラー: $error');
+          controller.addError(error);
+        },
+      );
+      
+      // コントローラーのクローズ時にサブスクリプションをキャンセル
+      controller.onCancel = () {
+        subscription.cancel();
+      };
+    }).catchError((error) {
+      controller.addError(error);
+    });
+    
+    return controller.stream;
+  }
+
+  // タイムラインの効率的なストリーミング（フォールバック付き）
+  Stream<List<Toot>> streamTimelineWithFallback(String timeline) {
+    final controller = StreamController<List<Toot>>.broadcast();
+    
+    // 初回：APIでタイムラインを取得
+    fetchTimeline(timeline).then((initialToots) {
+      controller.add(initialToots);
+      
+      // StreamingManagerで差分更新
+      final timelineStream = _streamingManager.getStream(_getStreamType(timeline));
+      final subscription = timelineStream.listen(
+        (data) {
+          try {
+            // データの型をチェックして適切に解析
+            Map<String, dynamic> parsedData;
+            if (data is String) {
+              parsedData = json.decode(data);
+            } else if (data is Map<String, dynamic>) {
+              parsedData = data;
+            } else {
+              return;
+            }
+            
+            if (parsedData['event'] == 'update' && parsedData['payload'] != null) {
+              // payloadがString型の場合はJSON解析する
+              Map<String, dynamic> payloadData;
+              if (parsedData['payload'] is String) {
+                payloadData = json.decode(parsedData['payload']);
+              } else if (parsedData['payload'] is Map<String, dynamic>) {
+                payloadData = parsedData['payload'];
+              } else {
+                return;
+              }
+              
+              final toot = Toot.fromJson(payloadData);
+              controller.add([toot]);
+            }
+          } catch (e) {
+            print('タイムラインストリーミングデータ解析エラー ($timeline): $e');
+          }
+        },
+        onError: (error) {
+          print('ストリーミング失敗、ポーリングにフォールバック: $error');
+          
+          // ストリーミング失敗時はポーリングで代替
+          Timer.periodic(const Duration(seconds: 60), (timer) async {
+            try {
+              final toots = await fetchTimeline(timeline);
+              controller.add(toots);
+            } catch (e) {
+              print('タイムラインポーリングエラー: $e');
+            }
+          });
+        },
+      );
+      
+      // コントローラーのクローズ時にサブスクリプションをキャンセル
+      controller.onCancel = () {
+        subscription.cancel();
+      };
+    }).catchError((error) {
+      controller.addError(error);
+    });
+    
+    return controller.stream;
+  }
+
+  // タイムラインの即座取得（初回読み込み用）
+  Future<List<Toot>> fetchTimelineImmediate(String timeline) async {
+    return await fetchTimeline(timeline);
+  }
+
+  // 効率的なタイムラインの手動更新（ストリーミング状態を確認）
+  Future<List<Toot>?> refreshTimelineEfficient(String timeline) async {
+    // ストリーミング接続の状態を確認
+    final isStreamingActive = _streamingManager.isStreamingActive(_getStreamType(timeline));
+    
+    if (isStreamingActive) {
+      // ストリーミングが維持されている場合は何もしない
+      print('タイムラインストリーミング接続が維持されているため、APIリクエストをスキップ');
+      return null;
+    } else {
+      // ストリーミングが切れている場合はAPIで更新してから再接続
+      print('タイムラインストリーミング接続が切れているため、APIで更新してから再接続');
+      
+      // APIで最新のタイムラインを取得
+      final toots = await fetchTimeline(timeline);
+      
+      // ストリーミング接続を再確立
+      _streamingManager.reconnectStream(_getStreamType(timeline));
+      
+      return toots;
+    }
+  }
+
+  // タイムラインタイプからストリームタイプを取得
+  String _getStreamType(String timeline) {
+    switch (timeline) {
+      case 'home':
+        return 'home';
+      case 'local':
+        return 'public:local';
+      case 'federated':
+        return 'public';
+      default:
+        return 'home';
     }
   }
 } 
