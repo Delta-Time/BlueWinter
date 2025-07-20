@@ -1,13 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/toot_model.dart';
+import 'streaming_manager.dart';
 
 class MastodonService {
   final String baseUrl;
   final String accessToken;
+  final StreamingManager _streamingManager = StreamingManager();
 
-  MastodonService({required this.baseUrl, required this.accessToken});
+  MastodonService({required this.baseUrl, required this.accessToken}) {
+    _streamingManager.initialize(baseUrl, accessToken);
+  }
 
   Map<String, String> get _headers => {
         'Authorization': 'Bearer $accessToken',
@@ -128,25 +133,168 @@ class MastodonService {
     }
   }
 
-  // ストリーミングAPI用のWebSocketを開始
+  // 通知を既読にする
+  Future<void> markNotificationAsRead(String id) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/v1/notifications/$id/dismiss'),
+      headers: _headers,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to mark notification as read: ${response.statusCode}');
+    }
+  }
+
+  // 全ての通知を既読にする
+  Future<void> markAllNotificationsAsRead() async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/v1/notifications/clear'),
+      headers: _headers,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to mark all notifications as read: ${response.statusCode}');
+    }
+  }
+
+  // タイムラインのストリーミング（StreamingManager使用）
   Stream<dynamic> streamTimeline(String timeline) {
-    // 実際のストリーミング実装はもっと複雑になりますが、
-    // ここではシンプルな擬似実装とします
-    // 実際の実装ではWebSocketsを使用します
-    StreamController<dynamic> controller = StreamController<dynamic>();
+    switch (timeline) {
+      case 'home':
+        return _streamingManager.getStream('home');
+      case 'local':
+        return _streamingManager.getStream('public:local');
+      case 'federated':
+        return _streamingManager.getStream('public');
+      default:
+        return _streamingManager.getStream('home');
+    }
+  }
+
+  // 通知のストリーミング（StreamingManager使用）
+  Stream<dynamic> streamNotifications() {
+    return _streamingManager.getStream('user');
+  }
+
+  // ハッシュタグのストリーミング
+  Stream<dynamic> streamHashtag(String tag) {
+    return _streamingManager.getStream('hashtag', tag: tag);
+  }
+
+  // リストのストリーミング
+  Stream<dynamic> streamList(String listId) {
+    return _streamingManager.getStream('list', list: listId);
+  }
+
+  // ダイレクトメッセージのストリーミング
+  Stream<dynamic> streamDirect() {
+    return _streamingManager.getStream('direct');
+  }
+
+
+
+  // 通知の効率的なストリーミング（StreamingManager使用）
+  Stream<List<dynamic>> streamNotificationsEfficient() {
+    final controller = StreamController<List<dynamic>>.broadcast();
     
-    // 定期的にデータを取得して流す擬似実装
-    Timer.periodic(const Duration(seconds: 10), (timer) async {
-      try {
-        final toots = await fetchTimeline(timeline);
-        if (toots.isNotEmpty) {
-          controller.add(toots.first);
-        }
-      } catch (e) {
-        controller.addError(e);
-      }
+    // 初回：APIで通知を取得
+    fetchNotifications().then((initialNotifications) {
+      controller.add(initialNotifications);
+      
+      // StreamingManagerで差分更新
+      final notificationStream = _streamingManager.getStream('user');
+      final subscription = notificationStream.listen(
+        (data) {
+          if (data['event'] == 'notification') {
+            controller.add([data['payload']]);
+          }
+        },
+        onError: (error) {
+          print('通知ストリーミングエラー: $error');
+          controller.addError(error);
+        },
+      );
+      
+      // コントローラーのクローズ時にサブスクリプションをキャンセル
+      controller.onCancel = () {
+        subscription.cancel();
+      };
+    }).catchError((error) {
+      controller.addError(error);
     });
     
     return controller.stream;
+  }
+
+
+
+  // 通知の効率的なストリーミング（StreamingManager使用、フォールバック付き）
+  Stream<List<dynamic>> streamNotificationsWithFallback() {
+    final controller = StreamController<List<dynamic>>.broadcast();
+    
+    // 初回：APIで通知を取得
+    fetchNotifications().then((initialNotifications) {
+      controller.add(initialNotifications);
+      
+      // StreamingManagerで差分更新
+      final notificationStream = _streamingManager.getStream('user');
+      final subscription = notificationStream.listen(
+        (data) {
+          if (data['event'] == 'notification') {
+            controller.add([data['payload']]);
+          }
+        },
+        onError: (error) {
+          print('ストリーミング失敗、ポーリングにフォールバック: $error');
+          
+          // ストリーミング失敗時はポーリングで代替
+          Timer.periodic(const Duration(seconds: 30), (timer) async {
+            try {
+              final notifications = await fetchNotifications();
+              controller.add(notifications);
+            } catch (e) {
+              print('ポーリングエラー: $e');
+            }
+          });
+        },
+      );
+      
+      // コントローラーのクローズ時にサブスクリプションをキャンセル
+      controller.onCancel = () {
+        subscription.cancel();
+      };
+    }).catchError((error) {
+      controller.addError(error);
+    });
+    
+    return controller.stream;
+  }
+
+  // 通知の即座取得（初回読み込み用）
+  Future<List<dynamic>> fetchNotificationsImmediate() async {
+    return await fetchNotifications();
+  }
+
+  // 効率的な手動更新（ストリーミング状態を確認）
+  Future<List<dynamic>?> refreshNotificationsEfficient() async {
+    // ストリーミング接続の状態を確認
+    final isStreamingActive = _streamingManager.isStreamingActive('user');
+    
+    if (isStreamingActive) {
+      // ストリーミングが維持されている場合は何もしない
+      print('ストリーミング接続が維持されているため、APIリクエストをスキップ');
+      return null;
+    } else {
+      // ストリーミングが切れている場合はAPIで更新してから再接続
+      print('ストリーミング接続が切れているため、APIで更新してから再接続');
+      
+      // APIで最新の通知を取得
+      final notifications = await fetchNotifications();
+      
+      // ストリーミング接続を再確立
+      _streamingManager.reconnectStream('user');
+      
+      return notifications;
+    }
   }
 } 
