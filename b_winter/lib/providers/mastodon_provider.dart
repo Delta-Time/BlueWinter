@@ -55,4 +55,74 @@ class MastodonProvider with ChangeNotifier {
     
     return await _mastodonService!.fetchNotifications(maxId: maxId);
   }
+
+  // 通知を既読にする
+  Future<void> markNotificationAsRead(String id) async {
+    if (_mastodonService == null) return;
+    
+    await _mastodonService!.markNotificationAsRead(id);
+    notifyListeners();
+  }
+
+  // 全ての通知を既読にする
+  Future<void> markAllNotificationsAsRead() async {
+    if (_mastodonService == null) return;
+    
+    await _mastodonService!.markAllNotificationsAsRead();
+    notifyListeners();
+  }
+
+  // 通知の効率的なストリーミング（フォールバック付き）
+  Stream<List<dynamic>> streamNotificationsEfficient() {
+    if (_mastodonService == null) {
+      return Stream.empty();
+    }
+    return _mastodonService!.streamNotificationsWithFallback();
+  }
+
+  // 通知の即座取得
+  Future<List<dynamic>?> fetchNotificationsImmediate() async {
+    if (_mastodonService == null) return null;
+    
+    return await _mastodonService!.fetchNotificationsImmediate();
+  }
+
+  // 効率的な通知の手動更新
+  Future<List<dynamic>?> refreshNotificationsEfficient() async {
+    if (_mastodonService == null) return null;
+    
+    return await _mastodonService!.refreshNotificationsEfficient();
+  }
+
+  // タイムラインのストリーミング
+  Stream<dynamic> streamTimeline(String timelineType) {
+    if (_mastodonService == null) {
+      return Stream.empty();
+    }
+    return _mastodonService!.streamTimeline(timelineType);
+  }
+
+  // ハッシュタグのストリーミング
+  Stream<dynamic> streamHashtag(String tag) {
+    if (_mastodonService == null) {
+      return Stream.empty();
+    }
+    return _mastodonService!.streamHashtag(tag);
+  }
+
+  // リストのストリーミング
+  Stream<dynamic> streamList(String listId) {
+    if (_mastodonService == null) {
+      return Stream.empty();
+    }
+    return _mastodonService!.streamList(listId);
+  }
+
+  // ダイレクトメッセージのストリーミング
+  Stream<dynamic> streamDirect() {
+    if (_mastodonService == null) {
+      return Stream.empty();
+    }
+    return _mastodonService!.streamDirect();
+  }
 } 

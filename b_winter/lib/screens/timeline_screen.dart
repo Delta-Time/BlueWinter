@@ -57,17 +57,24 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   void _setupStreaming() {
-    final timelineProvider = Provider.of<TimelineProvider>(context, listen: false);
-    _streamSubscription = timelineProvider.streamTimeline(widget.timelineType).listen(
-      (toot) {
-        if (mounted) {
-          setState(() {
-            // 新しい投稿を追加
-          });
+    final mastodonProvider = Provider.of<MastodonProvider>(context, listen: false);
+    _streamSubscription = mastodonProvider.streamTimeline(widget.timelineType).listen(
+      (data) {
+        if (mounted && data['event'] == 'update') {
+          // 新しい投稿を処理
+          try {
+            final toot = Toot.fromJson(data['payload']);
+            setState(() {
+              // 新しい投稿をリストの先頭に追加
+              // 実際の実装では、タイムラインの状態管理が必要
+            });
+          } catch (e) {
+            print('投稿データの解析エラー: $e');
+          }
         }
       },
       onError: (error) {
-        // エラー処理
+        print('タイムラインストリーミングエラー: $error');
       },
     );
   }
