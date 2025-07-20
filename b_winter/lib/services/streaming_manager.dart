@@ -36,17 +36,15 @@ class StreamingManager {
     return url;
   }
 
-  // ストリーミング接続の取得または作成
+  // ストリームの取得
   Stream<dynamic> getStream(String streamType, {String? tag, String? list}) {
     final streamKey = _getStreamKey(streamType, tag: tag, list: list);
     
-    // 既存の接続がある場合は再利用
-    if (_connections.containsKey(streamKey)) {
-      return _streamControllers[streamKey]!.stream;
+    if (!_connections.containsKey(streamKey)) {
+      _createStream(streamType, tag: tag, list: list);
     }
     
-    // 新しい接続を作成
-    return _createStream(streamKey, streamType, tag: tag, list: list);
+    return _streamControllers[streamKey]!.stream;
   }
 
   // ストリームキーの生成
@@ -95,16 +93,14 @@ class StreamingManager {
             final data = json.decode(message);
             controller.add(data);
           } catch (e) {
-            print('ストリーミングメッセージ解析エラー: $e');
+            // エラーは無視して続行
           }
         },
         onError: (error) {
-          print('ストリーミング接続エラー ($streamKey): $error');
           controller.addError(error);
           _cleanupConnection(streamKey);
         },
         onDone: () {
-          print('ストリーミング接続終了 ($streamKey)');
           controller.close();
           _cleanupConnection(streamKey);
         },
@@ -113,7 +109,6 @@ class StreamingManager {
       _subscriptions[streamKey]!.add(subscription);
       
     } catch (e) {
-      print('ストリーミング接続作成エラー ($streamKey): $e');
       controller.addError(e);
     }
     
@@ -203,5 +198,93 @@ class StreamingManager {
   // 接続一覧を取得
   List<String> getActiveConnections() {
     return _connections.keys.toList();
+  }
+
+  // タイムライン用の接続状態確認
+  bool isTimelineStreamingActive(String timelineType) {
+    String streamType;
+    switch (timelineType) {
+      case 'home':
+        streamType = 'home';
+        break;
+      case 'local':
+        streamType = 'public:local';
+        break;
+      case 'federated':
+        streamType = 'public';
+        break;
+      default:
+        streamType = 'home';
+    }
+    
+    return isStreamingActive(streamType);
+  }
+
+  // 接続の詳細情報を取得
+  Map<String, dynamic> getConnectionInfo(String streamType, {String? tag, String? list}) {
+    final streamKey = _getStreamKey(streamType, tag: tag, list: list);
+    final channel = _connections[streamKey];
+    final controller = _streamControllers[streamKey];
+    
+    return {
+      'streamKey': streamKey,
+      'isConnected': channel != null,
+      'hasController': controller != null,
+      'subscriptionCount': _subscriptions[streamKey]?.length ?? 0,
+    };
+  }
+
+  // 接続の健康状態を確認
+  bool isConnectionHealthy(String streamType, {String? tag, String? list}) {
+    final streamKey = _getStreamKey(streamType, tag: tag, list: list);
+    final channel = _connections[streamKey];
+    
+    if (channel == null) return false;
+    
+    try {
+      // チャンネルが存在し、コントローラーも存在する場合は健康とみなす
+      return _streamControllers.containsKey(streamKey);
+    } catch (e) {
+      print('接続健康状態確認エラー ($streamKey): $e');
+      return false;
+    }
+  }
+
+  // 接続の自動修復
+  void repairConnection(String streamType, {String? tag, String? list}) {
+    final streamKey = _getStreamKey(streamType, tag: tag, list: list);
+    
+    if (!isConnectionHealthy(streamType, tag: tag, list: list)) {
+      print('接続修復を実行 ($streamKey)');
+      reconnectStream(streamType, tag: tag, list: list);
+    }
+  }
+
+  // 全ての接続の健康状態を確認
+  Map<String, bool> checkAllConnectionsHealth() {
+    final healthStatus = <String, bool>{};
+    
+    for (final streamKey in _connections.keys) {
+      // streamKeyからstreamTypeを抽出
+      String streamType = streamKey;
+      String? tag;
+      String? list;
+      
+      if (streamKey.contains('_')) {
+        final parts = streamKey.split('_');
+        if (parts.length >= 2) {
+          streamType = parts[0];
+          if (streamKey.contains('_list_')) {
+            list = parts.last;
+          } else {
+            tag = parts.last;
+          }
+        }
+      }
+      
+      healthStatus[streamKey] = isConnectionHealthy(streamType, tag: tag, list: list);
+    }
+    
+    return healthStatus;
   }
 } 

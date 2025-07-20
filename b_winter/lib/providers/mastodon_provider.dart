@@ -125,4 +125,26 @@ class MastodonProvider with ChangeNotifier {
     }
     return _mastodonService!.streamDirect();
   }
+
+  // タイムラインの効率的なストリーミング（フォールバック付き）
+  Stream<List<Toot>> streamTimelineEfficient(String timelineType) {
+    if (_mastodonService == null) {
+      return Stream.empty();
+    }
+    return _mastodonService!.streamTimelineWithFallback(timelineType);
+  }
+
+  // タイムラインの即座取得
+  Future<List<Toot>?> fetchTimelineImmediate(String timelineType) async {
+    if (_mastodonService == null) return null;
+    
+    return await _mastodonService!.fetchTimelineImmediate(timelineType);
+  }
+
+  // 効率的なタイムラインの手動更新
+  Future<List<Toot>?> refreshTimelineEfficient(String timelineType) async {
+    if (_mastodonService == null) return null;
+    
+    return await _mastodonService!.refreshTimelineEfficient(timelineType);
+  }
 } 
