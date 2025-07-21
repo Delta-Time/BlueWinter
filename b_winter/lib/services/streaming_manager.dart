@@ -41,7 +41,7 @@ class StreamingManager {
     final streamKey = _getStreamKey(streamType, tag: tag, list: list);
     
     if (!_connections.containsKey(streamKey)) {
-      _createStream(streamType, tag: tag, list: list);
+      _createStream(streamKey, streamType, tag: tag, list: list);
     }
     
     return _streamControllers[streamKey]!.stream;

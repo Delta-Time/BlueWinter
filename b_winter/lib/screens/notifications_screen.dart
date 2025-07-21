@@ -8,6 +8,7 @@ import '../providers/mastodon_provider.dart';
 import '../widgets/notification_card.dart';
 import 'toot_detail_screen.dart';
 import 'compose_screen.dart';
+import 'package:collection/collection.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({Key? key}) : super(key: key);
@@ -265,15 +266,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void _handleReply(String id) async {
+    final toot = _notifications.firstWhereOrNull((n) => n.status?.id == id)?.status;
+    final acct = toot?.account.acct ?? '';
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ComposeScreen(replyToId: id),
+        builder: (context) => ComposeScreen(
+          replyToId: id,
+          replyToUsername: acct,
+        ),
       ),
     );
-
     if (result == true) {
-      // 返信後のリフレッシュ処理
       _refreshNotifications();
     }
   }
