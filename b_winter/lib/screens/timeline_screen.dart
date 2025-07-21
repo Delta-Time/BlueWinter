@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/toot_model.dart';
@@ -15,10 +14,10 @@ class TimelineScreen extends StatefulWidget {
   final String title;
 
   const TimelineScreen({
-    Key? key,
+    super.key,
     required this.timelineType,
     required this.title,
-  }) : super(key: key);
+  });
 
   @override
   State<TimelineScreen> createState() => _TimelineScreenState();
@@ -58,9 +57,19 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   void _setupStreaming() {
-    // TimelineProviderで効率的なストリーミングが既に実装されているため、
-    // ここでの追加のストリーミング処理は不要
-    // TimelineProvider.fetchTimelineEfficient()でストリーミングが開始される
+    final timelineProvider = Provider.of<TimelineProvider>(context, listen: false);
+    _streamSubscription = timelineProvider.streamTimeline(widget.timelineType).listen(
+      (toot) {
+        if (mounted) {
+          setState(() {
+            // 新しい投稿を追加
+          });
+        }
+      },
+      onError: (error) {
+        // エラー処理
+      },
+    );
   }
 
   Future<void> _loadTimeline() async {
@@ -70,21 +79,19 @@ class _TimelineScreenState extends State<TimelineScreen> {
       _isLoading = true;
     });
     
-    try {
-      // 効率的なタイムライン取得を使用
-      await Provider.of<TimelineProvider>(context, listen: false)
-          .fetchTimelineEfficient(widget.timelineType);
-    } catch (e) {
-      if (mounted) {
+    final timelineProvider = Provider.of<TimelineProvider>(context, listen: false);
+    // 効率的なタイムライン取得を使用
+    await timelineProvider.fetchTimelineEfficient(widget.timelineType);
+    
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      if (timelineProvider.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('タイムラインの読み込みに失敗しました: $e')),
+          SnackBar(content: Text('タイムラインの読み込みに失敗しました: ${timelineProvider.errorMessage}')),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
       }
     }
   }
@@ -96,21 +103,19 @@ class _TimelineScreenState extends State<TimelineScreen> {
       _isRefreshing = true;
     });
     
-    try {
-      // 効率的なリフレッシュを使用
-      await Provider.of<TimelineProvider>(context, listen: false)
-          .refreshTimelineEfficient(widget.timelineType);
-    } catch (e) {
-      if (mounted) {
+    final timelineProvider = Provider.of<TimelineProvider>(context, listen: false);
+    // 効率的なリフレッシュを使用
+    await timelineProvider.refreshTimelineEfficient(widget.timelineType);
+    
+    if (mounted) {
+      setState(() {
+        _isRefreshing = false;
+      });
+      
+      if (timelineProvider.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('タイムラインの更新に失敗しました: $e')),
+          SnackBar(content: Text('タイムラインの更新に失敗しました: ${timelineProvider.errorMessage}')),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isRefreshing = false;
-        });
       }
     }
   }
@@ -122,20 +127,18 @@ class _TimelineScreenState extends State<TimelineScreen> {
       _isLoading = true;
     });
     
-    try {
-      await Provider.of<TimelineProvider>(context, listen: false)
-          .loadMorePosts(widget.timelineType);
-    } catch (e) {
-      if (mounted) {
+    final timelineProvider = Provider.of<TimelineProvider>(context, listen: false);
+    await timelineProvider.loadMorePosts(widget.timelineType);
+    
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      if (timelineProvider.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('投稿の読み込みに失敗しました: $e')),
+          SnackBar(content: Text('投稿の読み込みに失敗しました: ${timelineProvider.errorMessage}')),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
       }
     }
   }
@@ -170,29 +173,28 @@ class _TimelineScreenState extends State<TimelineScreen> {
       _isSubmitting = true;
     });
 
-    try {
-      // 設定から投稿範囲を取得
-      final defaultVisibility = Provider.of<SettingsProvider>(context, listen: false).defaultVisibility;
-      
-      await Provider.of<MastodonProvider>(context, listen: false).postStatus(
-        status: text,
-        visibility: defaultVisibility,
-      );
-      
+    // 設定から投稿範囲を取得
+    final defaultVisibility = Provider.of<SettingsProvider>(context, listen: false).defaultVisibility;
+    final mastodonProvider = Provider.of<MastodonProvider>(context, listen: false);
+    
+    final result = await mastodonProvider.postStatus(
+      status: text,
+      visibility: defaultVisibility,
+    );
+    
+    if (!mounted) return;
+    
+    setState(() {
+      _isSubmitting = false;
+    });
+    
+    if (result != null) {
       _textController.clear();
       _refreshTimeline();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('投稿に失敗しました: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
+    } else if (mastodonProvider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('投稿に失敗しました: ${mastodonProvider.errorMessage}')),
+      );
     }
   }
 
@@ -201,14 +203,26 @@ class _TimelineScreenState extends State<TimelineScreen> {
     return Consumer<TimelineProvider>(
       builder: (context, timelineProvider, child) {
         final toots = timelineProvider.getTimelineToots(widget.timelineType);
-        final streamingInfo = timelineProvider.getStreamingInfo(widget.timelineType);
-        
-        // デバッグ情報をコンソールに出力
-        print('タイムライン状態 (${widget.timelineType}): $streamingInfo');
         
         return Scaffold(
           body: Column(
             children: [
+              // ストリーミング状態インジケーター
+              if (timelineProvider.isStreamingActive(widget.timelineType))
+                Container(
+                  width: double.infinity,
+                  color: Colors.green.withValues(alpha: 0.1),
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.stream, size: 16, color: Colors.green),
+                      SizedBox(width: 4),
+                      Text('リアルタイム更新中', style: TextStyle(fontSize: 12, color: Colors.green)),
+                    ],
+                  ),
+                ),
+              
               // タイムライン一覧
               Expanded(
                 child: RefreshIndicator(
@@ -246,7 +260,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                     color: Theme.of(context).cardColor,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 4,
                         offset: const Offset(0, -2),
                       ),

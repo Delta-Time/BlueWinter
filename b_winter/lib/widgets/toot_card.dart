@@ -14,7 +14,7 @@ class TootCard extends StatefulWidget {
   final bool isDetailView;
 
   const TootCard({
-    Key? key,
+    super.key,
     required this.toot,
     this.onFavorite,
     this.onReblog,
@@ -23,7 +23,7 @@ class TootCard extends StatefulWidget {
     required this.onTootTap,
     this.showActions = false,
     this.isDetailView = false,
-  }) : super(key: key);
+  });
 
   @override
   State<TootCard> createState() => _TootCardState();

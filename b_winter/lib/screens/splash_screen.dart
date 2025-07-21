@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -20,7 +20,9 @@ class _SplashScreenState extends State<SplashScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
     // 認証情報の初期化を待つ
-    await authProvider.initialize();
+    while (!authProvider.isInitialized) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
     
     if (mounted) {
       // 認証状態に応じて適切な画面に遷移

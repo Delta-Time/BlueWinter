@@ -1,13 +1,13 @@
-import 'package:flutter/foundation.dart';
 import '../models/toot_model.dart';
 import '../services/mastodon_service.dart';
+import 'base_view_model.dart';
 
-class MastodonProvider with ChangeNotifier {
+class MastodonProvider extends BaseViewModel {
   final MastodonService? _mastodonService;
 
   MastodonProvider(this._mastodonService);
 
-  // トゥートを投稿する
+  /// トゥートを投稿する
   Future<Toot?> postStatus({
     required String status,
     String? replyToId,
@@ -18,42 +18,47 @@ class MastodonProvider with ChangeNotifier {
   }) async {
     if (_mastodonService == null) return null;
     
-    final toot = await _mastodonService!.postStatus(
-      status: status,
-      replyToId: replyToId,
-      mediaIds: mediaIds,
-      sensitive: sensitive,
-      spoilerText: spoilerText,
-      visibility: visibility,
+    return await executeWithLoading<Toot>(
+      () => _mastodonService.postStatus(
+        status: status,
+        replyToId: replyToId,
+        mediaIds: mediaIds,
+        sensitive: sensitive,
+        spoilerText: spoilerText,
+        visibility: visibility,
+      ),
+      errorPrefix: 'トゥート投稿エラー',
     );
-    
-    notifyListeners();
-    return toot;
   }
 
-  // お気に入り登録
+  /// お気に入り登録
   Future<Toot?> favouriteStatus(String id) async {
     if (_mastodonService == null) return null;
     
-    final toot = await _mastodonService!.favouriteStatus(id);
-    notifyListeners();
-    return toot;
+    return await executeWithLoading<Toot>(
+      () => _mastodonService.favouriteStatus(id),
+      errorPrefix: 'お気に入り登録エラー',
+    );
   }
 
-  // ブースト
+  /// ブースト
   Future<Toot?> reblogStatus(String id) async {
     if (_mastodonService == null) return null;
     
-    final toot = await _mastodonService!.reblogStatus(id);
-    notifyListeners();
-    return toot;
+    return await executeWithLoading<Toot>(
+      () => _mastodonService.reblogStatus(id),
+      errorPrefix: 'ブーストエラー',
+    );
   }
 
-  // 通知を取得
+  /// 通知を取得
   Future<List<dynamic>?> fetchNotifications({String? maxId}) async {
     if (_mastodonService == null) return null;
     
-    return await _mastodonService!.fetchNotifications(maxId: maxId);
+    return await executeWithLoading<List<dynamic>>(
+      () => _mastodonService.fetchNotifications(maxId: maxId),
+      errorPrefix: '通知取得エラー',
+    );
   }
 
   // 通知を既読にする

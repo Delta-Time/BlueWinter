@@ -7,7 +7,7 @@ class ComposeScreen extends StatefulWidget {
   final String? replyToId;
   final String? replyToUsername;
 
-  const ComposeScreen({Key? key, this.replyToId, this.replyToUsername}) : super(key: key);
+  const ComposeScreen({super.key, this.replyToId, this.replyToUsername});
 
   @override
   State<ComposeScreen> createState() => _ComposeScreenState();
@@ -66,29 +66,30 @@ class _ComposeScreenState extends State<ComposeScreen> {
       _isSubmitting = true;
     });
 
-    try {
-      await Provider.of<MastodonProvider>(context, listen: false).postStatus(
-        status: _textController.text,
-        replyToId: (_replyToActive && widget.replyToId != null) ? widget.replyToId : null,
-        sensitive: _sensitive,
-        spoilerText: _contentWarningController.text.isEmpty
-            ? null
-            : _contentWarningController.text,
-        visibility: _visibility,
-      );
+    final mastodonProvider = Provider.of<MastodonProvider>(context, listen: false);
+    
+    final result = await mastodonProvider.postStatus(
+      status: _textController.text,
+      replyToId: (_replyToActive && widget.replyToId != null) ? widget.replyToId : null,
+      sensitive: _sensitive,
+      spoilerText: _contentWarningController.text.isEmpty
+          ? null
+          : _contentWarningController.text,
+      visibility: _visibility,
+    );
 
-      if (mounted) {
-        Navigator.pop(context, true); // 成功時はtrueを返す
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('投稿に失敗しました: $e')),
-        );
-      }
+    if (!mounted) return;
+
+    setState(() {
+      _isSubmitting = false;
+    });
+
+    if (result != null) {
+      Navigator.pop(context, true); // 成功時はtrueを返す
+    } else if (mastodonProvider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('投稿に失敗しました: ${mastodonProvider.errorMessage}')),
+      );
     }
   }
 
@@ -133,7 +134,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
                       icon: const Icon(Icons.close, size: 18, color: Colors.grey),
                       tooltip: 'リプライ解除',
                       padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(),
+                      constraints: const BoxConstraints(),
                       onPressed: () {
                         setState(() {
                           _replyToActive = false;

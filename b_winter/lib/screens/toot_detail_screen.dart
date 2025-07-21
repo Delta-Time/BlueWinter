@@ -8,17 +8,15 @@ import 'compose_screen.dart';
 class TootDetailScreen extends StatefulWidget {
   final Toot toot;
 
-  const TootDetailScreen({Key? key, required this.toot}) : super(key: key);
+  const TootDetailScreen({super.key, required this.toot});
 
   @override
   State<TootDetailScreen> createState() => _TootDetailScreenState();
 }
 
 class _TootDetailScreenState extends State<TootDetailScreen> {
-  bool _isFavourited = false;
-  bool _isReblogged = false;
-  int _favouritesCount = 0;
-  int _reblogsCount = 0;
+  late int _favouritesCount;
+  late int _reblogsCount;
 
   @override
   void initState() {
@@ -28,47 +26,43 @@ class _TootDetailScreenState extends State<TootDetailScreen> {
 
   void _initTootState() {
     final displayToot = widget.toot.reblog ?? widget.toot;
-    setState(() {
-      _isFavourited = displayToot.favourited;
-      _isReblogged = displayToot.reblogged;
-      _favouritesCount = displayToot.favouritesCount;
-      _reblogsCount = displayToot.reblogsCount;
-    });
+    _favouritesCount = displayToot.favouritesCount;
+    _reblogsCount = displayToot.reblogsCount;
   }
 
-  void _handleFavorite(String id) async {
-    try {
-      await Provider.of<MastodonProvider>(context, listen: false).favouriteStatus(id);
+  Future<void> _handleFavorite(String id) async {
+    final mastodonProvider = Provider.of<MastodonProvider>(context, listen: false);
+    
+    final result = await mastodonProvider.favouriteStatus(id);
+    
+    if (result != null) {
       setState(() {
-        _isFavourited = true;
         _favouritesCount++;
       });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('お気に入り登録に失敗しました: $e')),
-        );
-      }
+    } else if (mounted && mastodonProvider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('お気に入り登録に失敗しました: ${mastodonProvider.errorMessage}')),
+      );
     }
   }
 
-  void _handleReblog(String id) async {
-    try {
-      await Provider.of<MastodonProvider>(context, listen: false).reblogStatus(id);
+  Future<void> _handleReblog(String id) async {
+    final mastodonProvider = Provider.of<MastodonProvider>(context, listen: false);
+    
+    final result = await mastodonProvider.reblogStatus(id);
+    
+    if (result != null) {
       setState(() {
-        _isReblogged = true;
         _reblogsCount++;
       });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ブーストに失敗しました: $e')),
-        );
-      }
+    } else if (mounted && mastodonProvider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ブーストに失敗しました: ${mastodonProvider.errorMessage}')),
+      );
     }
   }
 
-  void _handleReply(String id) async {
+  Future<void> _handleReply(String id) async {
     final displayToot = widget.toot.reblog ?? widget.toot;
     final result = await Navigator.push(
       context,

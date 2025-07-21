@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/storage_service.dart';
 import '../providers/auth_provider.dart';
 
 class TokenInputScreen extends StatefulWidget {
-  const TokenInputScreen({Key? key}) : super(key: key);
+  const TokenInputScreen({super.key});
 
   @override
   State<TokenInputScreen> createState() => _TokenInputScreenState();
@@ -42,15 +41,20 @@ class _TokenInputScreenState extends State<TokenInputScreen> {
         instanceUrl = instanceUrl.substring(0, instanceUrl.length - 1);
       }
 
-      final storageService = Provider.of<StorageService>(context, listen: false);
-      await storageService.saveInstanceUrl(instanceUrl);
-      await storageService.saveAccessToken(_tokenController.text.trim());
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final success = await authProvider.setMastodonCredentials(
+        instanceUrl,
+        _tokenController.text.trim(),
+      );
 
-      // 認証情報を使って認証プロバイダーを初期化
-      await Provider.of<AuthProvider>(context, listen: false).initialize();
+      if (!mounted) return;
 
-      if (mounted) {
+      if (success) {
         Navigator.of(context).pushReplacementNamed('/home');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('認証情報の保存に失敗しました')),
+        );
       }
     } catch (e) {
       if (mounted) {
