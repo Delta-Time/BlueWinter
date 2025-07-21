@@ -4,6 +4,7 @@ import '../providers/auth_provider.dart';
 import 'timeline_screen.dart';
 import 'compose_screen.dart';
 import 'settings_screen.dart';
+import 'notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -69,8 +70,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             title: 'ホーム',
           ),
           
-          // 通知タイムライン（実装省略）
-          Center(child: Text('通知画面（実装中）')),
+          // 通知画面
+          const NotificationsScreen(),
           
           // ローカルタイムライン
           TimelineScreen(

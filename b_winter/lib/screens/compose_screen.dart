@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/mastodon_provider.dart';
+import '../providers/settings_provider.dart';
 
 class ComposeScreen extends StatefulWidget {
   final String? replyToId;
+  final String? replyToUsername;
 
-  const ComposeScreen({Key? key, this.replyToId}) : super(key: key);
+  const ComposeScreen({Key? key, this.replyToId, this.replyToUsername}) : super(key: key);
 
   @override
   State<ComposeScreen> createState() => _ComposeScreenState();
@@ -18,11 +20,30 @@ class _ComposeScreenState extends State<ComposeScreen> {
   String _visibility = 'public';
   bool _sensitive = false;
   final TextEditingController _contentWarningController = TextEditingController();
+  bool _replyToActive = true;
 
   @override
   void initState() {
     super.initState();
     _focusNode.requestFocus();
+    // リプライ時は@ユーザー名を本文先頭に自動挿入
+    if (widget.replyToUsername != null && widget.replyToUsername!.isNotEmpty) {
+      _textController.text = '@${widget.replyToUsername!} ';
+      _textController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _textController.text.length),
+      );
+    }
+    // 設定プロバイダーからデフォルトの公開範囲を読み込む
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+        if (settingsProvider.defaultVisibility != _visibility) {
+          setState(() {
+            _visibility = settingsProvider.defaultVisibility;
+          });
+        }
+      }
+    });
   }
 
   @override
@@ -48,7 +69,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
     try {
       await Provider.of<MastodonProvider>(context, listen: false).postStatus(
         status: _textController.text,
-        replyToId: widget.replyToId,
+        replyToId: (_replyToActive && widget.replyToId != null) ? widget.replyToId : null,
         sensitive: _sensitive,
         spoilerText: _contentWarningController.text.isEmpty
             ? null
@@ -73,6 +94,18 @@ class _ComposeScreenState extends State<ComposeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 設定プロバイダーからデフォルトの公開範囲を監視
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    
+    // 設定が変更された時に公開範囲を更新
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && settingsProvider.defaultVisibility != _visibility) {
+        setState(() {
+          _visibility = settingsProvider.defaultVisibility;
+        });
+      }
+    });
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('新規投稿'),
@@ -87,6 +120,29 @@ class _ComposeScreenState extends State<ComposeScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            if (widget.replyToUsername != null && widget.replyToUsername!.isNotEmpty && _replyToActive)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.reply, size: 18, color: Colors.blue),
+                    const SizedBox(width: 4),
+                    Text('@${widget.replyToUsername!} に返信中', style: const TextStyle(color: Colors.blue)),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 18, color: Colors.grey),
+                      tooltip: 'リプライ解除',
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(),
+                      onPressed: () {
+                        setState(() {
+                          _replyToActive = false;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
             // 公開範囲の選択
             Row(
               children: [
