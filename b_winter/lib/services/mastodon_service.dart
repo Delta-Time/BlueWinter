@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/toot_model.dart';
 import 'streaming_manager.dart';
 
@@ -225,7 +225,7 @@ class MastodonService {
           }
         },
         onError: (error) {
-          print('通知ストリーミングエラー: $error');
+          if (kDebugMode) print('通知ストリーミングエラー: $error');
           controller.addError(error);
         },
       );

@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/toot_model.dart';
@@ -15,10 +15,10 @@ class TimelineScreen extends StatefulWidget {
   final String title;
 
   const TimelineScreen({
-    Key? key,
+    super.key,
     required this.timelineType,
     required this.title,
-  }) : super(key: key);
+  });
 
   @override
   State<TimelineScreen> createState() => _TimelineScreenState();
@@ -204,7 +204,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
         final streamingInfo = timelineProvider.getStreamingInfo(widget.timelineType);
         
         // デバッグ情報をコンソールに出力
-        print('タイムライン状態 (${widget.timelineType}): $streamingInfo');
+        if (kDebugMode) print('タイムライン状態 (${widget.timelineType}): $streamingInfo');
         
         return Scaffold(
           body: Column(
@@ -246,7 +246,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                     color: Theme.of(context).cardColor,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 4,
                         offset: const Offset(0, -2),
                       ),

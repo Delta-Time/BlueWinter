@@ -13,14 +13,14 @@ class NotificationCard extends StatelessWidget {
   final Function(Toot) onTootTap;
 
   const NotificationCard({
-    Key? key,
+    super.key,
     required this.notification,
     this.onTap,
     this.onFavorite,
     this.onReblog,
     this.onReply,
     required this.onTootTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +40,7 @@ class NotificationCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: notification.notificationColor.withOpacity(0.1),
+                  color: notification.notificationColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Icon(

@@ -7,7 +7,7 @@ class ComposeScreen extends StatefulWidget {
   final String? replyToId;
   final String? replyToUsername;
 
-  const ComposeScreen({Key? key, this.replyToId, this.replyToUsername}) : super(key: key);
+  const ComposeScreen({super.key, this.replyToId, this.replyToUsername});
 
   @override
   State<ComposeScreen> createState() => _ComposeScreenState();

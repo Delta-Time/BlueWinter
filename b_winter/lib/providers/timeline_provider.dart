@@ -55,7 +55,7 @@ class TimelineProvider with ChangeNotifier {
   Future<void> fetchTimeline(String timelineType) async {
     if (_mastodonService == null) return;
     
-    final toots = await _mastodonService!.fetchTimeline(timelineType);
+    final toots = await _mastodonService.fetchTimeline(timelineType);
     
     if (toots.isNotEmpty) {
       _timelines[timelineType] = toots;
@@ -69,7 +69,7 @@ class TimelineProvider with ChangeNotifier {
     if (_mastodonService == null) return;
     
     // 初回：APIでタイムラインを取得
-    final toots = await _mastodonService!.fetchTimeline(timelineType);
+    final toots = await _mastodonService.fetchTimeline(timelineType);
     
     if (toots.isNotEmpty) {
       _timelines[timelineType] = toots;
@@ -91,7 +91,7 @@ class TimelineProvider with ChangeNotifier {
     _streamSubscriptions[timelineType]?.cancel();
 
     // 新しいストリーミング接続を開始
-    final stream = _mastodonService!.streamTimelineWithFallback(timelineType);
+    final stream = _mastodonService.streamTimelineWithFallback(timelineType);
     final subscription = stream.listen(
       (newToots) {
         if (newToots.isNotEmpty) {
@@ -143,7 +143,7 @@ class TimelineProvider with ChangeNotifier {
   Future<void> refreshTimeline(String timelineType) async {
     if (_mastodonService == null) return;
     
-    final toots = await _mastodonService!.fetchTimeline(timelineType);
+    final toots = await _mastodonService.fetchTimeline(timelineType);
     
     if (toots.isNotEmpty) {
       _timelines[timelineType] = toots;
@@ -156,7 +156,7 @@ class TimelineProvider with ChangeNotifier {
   Future<void> refreshTimelineEfficient(String timelineType) async {
     if (_mastodonService == null) return;
 
-    final updatedToots = await _mastodonService!.refreshTimelineEfficient(timelineType);
+    final updatedToots = await _mastodonService.refreshTimelineEfficient(timelineType);
     
     if (updatedToots != null) {
       _timelines[timelineType] = updatedToots;
@@ -171,7 +171,7 @@ class TimelineProvider with ChangeNotifier {
     final maxId = _maxIds[timelineType];
     if (maxId == null) return;
     
-    final newToots = await _mastodonService!.fetchTimeline(
+    final newToots = await _mastodonService.fetchTimeline(
       timelineType,
       maxId: maxId,
     );
@@ -191,7 +191,7 @@ class TimelineProvider with ChangeNotifier {
   Future<void> favouriteToot(String id) async {
     if (_mastodonService == null) return;
     
-    final updatedToot = await _mastodonService!.favouriteStatus(id);
+    final updatedToot = await _mastodonService.favouriteStatus(id);
     _updateTootInTimelines(id, updatedToot);
     notifyListeners();
   }
@@ -199,7 +199,7 @@ class TimelineProvider with ChangeNotifier {
   Future<void> reblogToot(String id) async {
     if (_mastodonService == null) return;
     
-    final updatedToot = await _mastodonService!.reblogStatus(id);
+    final updatedToot = await _mastodonService.reblogStatus(id);
     _updateTootInTimelines(id, updatedToot);
     notifyListeners();
   }
@@ -218,7 +218,7 @@ class TimelineProvider with ChangeNotifier {
     if (_mastodonService == null) {
       return Stream.empty();
     }
-    return _mastodonService!.streamTimelineWithFallback(timelineType);
+    return _mastodonService.streamTimelineWithFallback(timelineType);
   }
 
   @override
