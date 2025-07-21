@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/toot_model.dart';
@@ -14,10 +15,10 @@ class TimelineScreen extends StatefulWidget {
   final String title;
 
   const TimelineScreen({
-    Key? key,
+    super.key,
     required this.timelineType,
     required this.title,
-  }) : super(key: key);
+  });
 
   @override
   State<TimelineScreen> createState() => _TimelineScreenState();
@@ -57,19 +58,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   void _setupStreaming() {
-    final timelineProvider = Provider.of<TimelineProvider>(context, listen: false);
-    _streamSubscription = timelineProvider.streamTimeline(widget.timelineType).listen(
-      (toot) {
-        if (mounted) {
-          setState(() {
-            // 新しい投稿を追加
-          });
-        }
-      },
-      onError: (error) {
-        // エラー処理
-      },
-    );
+    // TimelineProviderで効率的なストリーミングが既に実装されているため、
+    // ここでの追加のストリーミング処理は不要
+    // TimelineProvider.fetchTimelineEfficient()でストリーミングが開始される
   }
 
   Future<void> _loadTimeline() async {
@@ -80,8 +71,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
     });
     
     try {
+      // 効率的なタイムライン取得を使用
       await Provider.of<TimelineProvider>(context, listen: false)
-          .fetchTimeline(widget.timelineType);
+          .fetchTimelineEfficient(widget.timelineType);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -105,8 +97,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
     });
     
     try {
+      // 効率的なリフレッシュを使用
       await Provider.of<TimelineProvider>(context, listen: false)
-          .refreshTimeline(widget.timelineType);
+          .refreshTimelineEfficient(widget.timelineType);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -208,6 +201,10 @@ class _TimelineScreenState extends State<TimelineScreen> {
     return Consumer<TimelineProvider>(
       builder: (context, timelineProvider, child) {
         final toots = timelineProvider.getTimelineToots(widget.timelineType);
+        final streamingInfo = timelineProvider.getStreamingInfo(widget.timelineType);
+        
+        // デバッグ情報をコンソールに出力
+        if (kDebugMode) print('タイムライン状態 (${widget.timelineType}): $streamingInfo');
         
         return Scaffold(
           body: Column(
@@ -249,7 +246,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                     color: Theme.of(context).cardColor,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 4,
                         offset: const Offset(0, -2),
                       ),

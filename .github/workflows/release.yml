@@ -32,12 +32,19 @@ jobs:
       - name: Build APK
         run: |
           cd b_winter
-          flutter build apk --release
+          flutter build apk --flavor githubRelease --release
+
+      - name: List built APK files
+        run: |
+          cd b_winter
+          find build/app/outputs/flutter-apk/ -name "*.apk" -type f
+          ls -la build/app/outputs/flutter-apk/
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: b_winter/build/app/outputs/flutter-apk/app-release.apk
+          files: b_winter/build/app/outputs/flutter-apk/*.apk
           name: Release ${{ env.VERSION }}
           tag_name: ${{ github.ref }}
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          fail_on_unmatched_files: false

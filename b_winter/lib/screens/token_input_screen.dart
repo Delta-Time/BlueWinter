@@ -4,7 +4,7 @@ import '../services/storage_service.dart';
 import '../providers/auth_provider.dart';
 
 class TokenInputScreen extends StatefulWidget {
-  const TokenInputScreen({Key? key}) : super(key: key);
+  const TokenInputScreen({super.key});
 
   @override
   State<TokenInputScreen> createState() => _TokenInputScreenState();
@@ -71,7 +71,7 @@ class _TokenInputScreenState extends State<TokenInputScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('BlueWinter'),
+        title: const Text('詳細設定 - トークン直接入力'),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -82,10 +82,19 @@ class _TokenInputScreenState extends State<TokenInputScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
-                  'Mastodonのインスタンスとアクセストークンを入力してください',
+                  '詳細設定 - アクセストークン直接入力',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '通常のOAuth認証がうまく動作しない場合や、開発者向けの設定として、'
+                  'アクセストークンを直接入力することができます。',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
                   ),
                 ),
                 const SizedBox(height: 16),

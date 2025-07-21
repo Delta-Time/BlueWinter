@@ -8,7 +8,7 @@ import 'compose_screen.dart';
 class TootDetailScreen extends StatefulWidget {
   final Toot toot;
 
-  const TootDetailScreen({Key? key, required this.toot}) : super(key: key);
+  const TootDetailScreen({super.key, required this.toot});
 
   @override
   State<TootDetailScreen> createState() => _TootDetailScreenState();
@@ -69,13 +69,16 @@ class _TootDetailScreenState extends State<TootDetailScreen> {
   }
 
   void _handleReply(String id) async {
+    final displayToot = widget.toot.reblog ?? widget.toot;
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ComposeScreen(replyToId: id),
+        builder: (context) => ComposeScreen(
+          replyToId: id,
+          replyToUsername: displayToot.account.acct,
+        ),
       ),
     );
-
     if (result == true) {
       // 返信後のリフレッシュ処理（省略）
     }
