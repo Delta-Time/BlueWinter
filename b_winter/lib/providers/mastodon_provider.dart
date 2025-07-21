@@ -18,7 +18,7 @@ class MastodonProvider with ChangeNotifier {
   }) async {
     if (_mastodonService == null) return null;
     
-    final toot = await _mastodonService!.postStatus(
+    final toot = await _mastodonService.postStatus(
       status: status,
       replyToId: replyToId,
       mediaIds: mediaIds,
@@ -35,7 +35,7 @@ class MastodonProvider with ChangeNotifier {
   Future<Toot?> favouriteStatus(String id) async {
     if (_mastodonService == null) return null;
     
-    final toot = await _mastodonService!.favouriteStatus(id);
+    final toot = await _mastodonService.favouriteStatus(id);
     notifyListeners();
     return toot;
   }
@@ -44,7 +44,7 @@ class MastodonProvider with ChangeNotifier {
   Future<Toot?> reblogStatus(String id) async {
     if (_mastodonService == null) return null;
     
-    final toot = await _mastodonService!.reblogStatus(id);
+    final toot = await _mastodonService.reblogStatus(id);
     notifyListeners();
     return toot;
   }
@@ -53,14 +53,14 @@ class MastodonProvider with ChangeNotifier {
   Future<List<dynamic>?> fetchNotifications({String? maxId}) async {
     if (_mastodonService == null) return null;
     
-    return await _mastodonService!.fetchNotifications(maxId: maxId);
+    return await _mastodonService.fetchNotifications(maxId: maxId);
   }
 
   // 通知を既読にする
   Future<void> markNotificationAsRead(String id) async {
     if (_mastodonService == null) return;
     
-    await _mastodonService!.markNotificationAsRead(id);
+    await _mastodonService.markNotificationAsRead(id);
     notifyListeners();
   }
 
@@ -68,7 +68,7 @@ class MastodonProvider with ChangeNotifier {
   Future<void> markAllNotificationsAsRead() async {
     if (_mastodonService == null) return;
     
-    await _mastodonService!.markAllNotificationsAsRead();
+    await _mastodonService.markAllNotificationsAsRead();
     notifyListeners();
   }
 
@@ -77,21 +77,21 @@ class MastodonProvider with ChangeNotifier {
     if (_mastodonService == null) {
       return Stream.empty();
     }
-    return _mastodonService!.streamNotificationsWithFallback();
+    return _mastodonService.streamNotificationsWithFallback();
   }
 
   // 通知の即座取得
   Future<List<dynamic>?> fetchNotificationsImmediate() async {
     if (_mastodonService == null) return null;
     
-    return await _mastodonService!.fetchNotificationsImmediate();
+    return await _mastodonService.fetchNotificationsImmediate();
   }
 
   // 効率的な通知の手動更新
   Future<List<dynamic>?> refreshNotificationsEfficient() async {
     if (_mastodonService == null) return null;
     
-    return await _mastodonService!.refreshNotificationsEfficient();
+    return await _mastodonService.refreshNotificationsEfficient();
   }
 
   // タイムラインのストリーミング
@@ -99,7 +99,7 @@ class MastodonProvider with ChangeNotifier {
     if (_mastodonService == null) {
       return Stream.empty();
     }
-    return _mastodonService!.streamTimeline(timelineType);
+    return _mastodonService.streamTimeline(timelineType);
   }
 
   // ハッシュタグのストリーミング
@@ -107,7 +107,7 @@ class MastodonProvider with ChangeNotifier {
     if (_mastodonService == null) {
       return Stream.empty();
     }
-    return _mastodonService!.streamHashtag(tag);
+    return _mastodonService.streamHashtag(tag);
   }
 
   // リストのストリーミング
@@ -115,7 +115,7 @@ class MastodonProvider with ChangeNotifier {
     if (_mastodonService == null) {
       return Stream.empty();
     }
-    return _mastodonService!.streamList(listId);
+    return _mastodonService.streamList(listId);
   }
 
   // ダイレクトメッセージのストリーミング
@@ -123,7 +123,7 @@ class MastodonProvider with ChangeNotifier {
     if (_mastodonService == null) {
       return Stream.empty();
     }
-    return _mastodonService!.streamDirect();
+    return _mastodonService.streamDirect();
   }
 
   // タイムラインの効率的なストリーミング（フォールバック付き）
@@ -131,20 +131,20 @@ class MastodonProvider with ChangeNotifier {
     if (_mastodonService == null) {
       return Stream.empty();
     }
-    return _mastodonService!.streamTimelineWithFallback(timelineType);
+    return _mastodonService.streamTimelineWithFallback(timelineType);
   }
 
   // タイムラインの即座取得
   Future<List<Toot>?> fetchTimelineImmediate(String timelineType) async {
     if (_mastodonService == null) return null;
     
-    return await _mastodonService!.fetchTimelineImmediate(timelineType);
+    return await _mastodonService.fetchTimelineImmediate(timelineType);
   }
 
   // 効率的なタイムラインの手動更新
   Future<List<Toot>?> refreshTimelineEfficient(String timelineType) async {
     if (_mastodonService == null) return null;
     
-    return await _mastodonService!.refreshTimelineEfficient(timelineType);
+    return await _mastodonService.refreshTimelineEfficient(timelineType);
   }
 } 

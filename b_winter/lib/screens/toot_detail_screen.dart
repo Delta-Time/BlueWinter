@@ -8,7 +8,7 @@ import 'compose_screen.dart';
 class TootDetailScreen extends StatefulWidget {
   final Toot toot;
 
-  const TootDetailScreen({Key? key, required this.toot}) : super(key: key);
+  const TootDetailScreen({super.key, required this.toot});
 
   @override
   State<TootDetailScreen> createState() => _TootDetailScreenState();

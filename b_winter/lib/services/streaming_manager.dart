@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'mastodon_service.dart';
 
 class StreamingManager {
   static final StreamingManager _instance = StreamingManager._internal();
@@ -245,7 +245,7 @@ class StreamingManager {
       // チャンネルが存在し、コントローラーも存在する場合は健康とみなす
       return _streamControllers.containsKey(streamKey);
     } catch (e) {
-      print('接続健康状態確認エラー ($streamKey): $e');
+              if (kDebugMode) print('接続健康状態確認エラー ($streamKey): $e');
       return false;
     }
   }
@@ -255,7 +255,7 @@ class StreamingManager {
     final streamKey = _getStreamKey(streamType, tag: tag, list: list);
     
     if (!isConnectionHealthy(streamType, tag: tag, list: list)) {
-      print('接続修復を実行 ($streamKey)');
+      if (kDebugMode) print('接続修復を実行 ($streamKey)');
       reconnectStream(streamType, tag: tag, list: list);
     }
   }

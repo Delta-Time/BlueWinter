@@ -4,7 +4,7 @@ import '../services/storage_service.dart';
 import '../providers/auth_provider.dart';
 
 class TokenInputScreen extends StatefulWidget {
-  const TokenInputScreen({Key? key}) : super(key: key);
+  const TokenInputScreen({super.key});
 
   @override
   State<TokenInputScreen> createState() => _TokenInputScreenState();
