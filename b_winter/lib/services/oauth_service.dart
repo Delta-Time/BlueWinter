@@ -79,11 +79,21 @@ class OAuthService {
     );
     
     // ブラウザーで認証URLを開く
-    if (await canLaunchUrl(authUrl)) {
-      await launchUrl(authUrl, mode: LaunchMode.externalApplication);
-      return authUrl.toString();
-    } else {
-      throw Exception('ブラウザーを開けません');
+    try {
+      if (await canLaunchUrl(authUrl)) {
+        await launchUrl(
+          authUrl, 
+          mode: LaunchMode.platformDefault,
+          browserConfiguration: const BrowserConfiguration(
+            showTitle: true,
+          ),
+        );
+        return authUrl.toString();
+      } else {
+        throw Exception('このデバイスではブラウザーアプリを開くことができません。\n認証URLを手動でコピーしてブラウザーで開いてください:\n$authUrl');
+      }
+    } catch (e) {
+      throw Exception('ブラウザーを開く際にエラーが発生しました: $e\n\n認証URLを手動でコピーしてブラウザーで開いてください:\n$authUrl');
     }
   }
   
