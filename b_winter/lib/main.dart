@@ -8,7 +8,7 @@ import 'providers/settings_provider.dart';
 import 'services/storage_service.dart';
 import 'services/mastodon_service.dart';
 import 'screens/splash_screen.dart';
-import 'screens/token_input_screen.dart';
+import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
 void main() {
@@ -76,7 +76,7 @@ class MyApp extends StatelessWidget {
             initialRoute: '/',
             routes: {
               '/': (context) => const SplashScreen(),
-              '/login': (context) => const TokenInputScreen(),
+              '/login': (context) => const LoginScreen(),
               '/home': (context) => const HomeScreen(),
             },
           );
