@@ -32,7 +32,7 @@ jobs:
       - name: Build APK
         run: |
           cd b_winter
-          flutter build apk --release
+          flutter build apk --flavor githubRelease --release
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
